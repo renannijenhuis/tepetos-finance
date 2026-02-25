@@ -1,0 +1,28 @@
+# Tepetos Finance v20.5 - Dependências
+# Atualizado em: 2026-02-25
+
+# Framework principal
+streamlit==1.31.1
+
+# Análise de dados
+pandas==2.2.0
+numpy==1.26.3
+
+# Visualização
+plotly==5.18.0
+
+# IA e Machine Learning
+google-generativeai==0.3.2
+
+# Dados financeiros
+yfinance==0.2.35
+
+# Processamento de imagens
+Pillow==10.2.0
+
+# Requisições HTTP
+requests==2.31.0
+
+# Utilitários
+python-dateutil==2.8.2
+pytz==2024.1
