@@ -1,28 +1,42 @@
-# Tepetos Finance v20.5 - Dependências
-# Atualizado em: 2026-02-25
-
-# Framework principal
 streamlit==1.31.1
-
-# Análise de dados
-pandas==2.2.0
-numpy==1.26.3
-
-# Visualização
+pandas==2.1.4
+numpy==1.26.4
 plotly==5.18.0
-
-# IA e Machine Learning
 google-generativeai==0.3.2
-
-# Dados financeiros
 yfinance==0.2.35
-
-# Processamento de imagens
-Pillow==10.2.0
-
-# Requisições HTTP
+Pillow==10.4.0
 requests==2.31.0
-
-# Utilitários
 python-dateutil==2.8.2
 pytz==2024.1
+```
+
+6. **Role para baixo e clique em "Commit changes"**
+
+7. **Na caixinha que aparece, clique em "Commit changes" de novo**
+
+8. **AGUARDE 2-3 MINUTOS**
+   - O Streamlit vai detectar automaticamente
+   - Vai fazer deploy sozinho
+   - Você verá nos logs: "Processing dependencies..."
+
+---
+
+## 🎯 O QUE MUDOU:
+
+- ❌ `Pillow==10.2.0` (não funciona com Python 3.13)
+- ✅ `Pillow==10.4.0` (compatível com Python 3.13)
+- ✅ `pandas==2.1.4` (mais estável que 2.2.0)
+- ✅ `numpy==1.26.4` (compatível)
+
+---
+
+## 📊 ACOMPANHE O PROGRESSO:
+
+1. **No Streamlit Cloud, vá em "Manage app"**
+2. **Clique em "Logs"**
+3. **Você verá:**
+```
+   🐙 Pulling code changes from Github...
+   📦 Processing dependencies...
+   [Installing packages...]
+   🎈 App is live!
