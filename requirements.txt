@@ -1,3 +1,26 @@
+```txt
+streamlit==1.31.1
+...
+```
+```
+
+O arquivo ficou com ``` ``` ``` no início e fim, que são marcadores de código markdown.
+
+## ✅ SOLUÇÃO (2 minutos):
+
+1. **Vá no GitHub:**
+```
+   https://github.com/renannijenhuis/tepetos-finance
+```
+
+2. **Clique em `requirements.txt`**
+
+3. **Clique no lápis (editar)**
+
+4. **APAGUE TUDO**
+
+5. **Cole EXATAMENTE estas 10 linhas (SEM as crases):**
+```
 streamlit==1.31.1
 pandas==2.1.4
 numpy==1.26.4
@@ -10,33 +33,28 @@ python-dateutil==2.8.2
 pytz==2024.1
 ```
 
-6. **Role para baixo e clique em "Commit changes"**
+**IMPORTANTE:** 
+- ❌ NÃO copie a palavra "```" 
+- ✅ Copie APENAS as 10 linhas com o nome das bibliotecas
+- ✅ Deve ser EXATAMENTE 10 linhas
 
-7. **Na caixinha que aparece, clique em "Commit changes" de novo**
+6. **Commit changes**
 
-8. **AGUARDE 2-3 MINUTOS**
-   - O Streamlit vai detectar automaticamente
-   - Vai fazer deploy sozinho
-   - Você verá nos logs: "Processing dependencies..."
-
----
-
-## 🎯 O QUE MUDOU:
-
-- ❌ `Pillow==10.2.0` (não funciona com Python 3.13)
-- ✅ `Pillow==10.4.0` (compatível com Python 3.13)
-- ✅ `pandas==2.1.4` (mais estável que 2.2.0)
-- ✅ `numpy==1.26.4` (compatível)
+7. **Aguarde 2 minutos**
 
 ---
 
-## 📊 ACOMPANHE O PROGRESSO:
+## 📝 COMO DEVE FICAR:
 
-1. **No Streamlit Cloud, vá em "Manage app"**
-2. **Clique em "Logs"**
-3. **Você verá:**
+Seu arquivo `requirements.txt` deve ter APENAS isto (sem mais nada):
 ```
-   🐙 Pulling code changes from Github...
-   📦 Processing dependencies...
-   [Installing packages...]
-   🎈 App is live!
+streamlit==1.31.1
+pandas==2.1.4
+numpy==1.26.4
+plotly==5.18.0
+google-generativeai==0.3.2
+yfinance==0.2.35
+Pillow==10.4.0
+requests==2.31.0
+python-dateutil==2.8.2
+pytz==2024.1
