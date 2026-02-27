@@ -20,7 +20,7 @@ except ImportError:
     YFINANCE_INSTALADO = False
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Tepetos' Finance V20.5", page_icon="🐥", layout="wide")
+st.set_page_config(page_title="Tepetos' Finance V22.2", page_icon="🐥", layout="wide")
 
 st.markdown("""
     <style>
@@ -158,9 +158,19 @@ def buscar_dados_ativo(ticker):
         return preco, beta
     except: return None, 1.0
 
+# 🔥 V22.2: Adicionadas Commodities do Agronegócio e Cobre 🔥
 @st.cache_data(ttl=3600)
 def buscar_indicadores_macro():
-    indicadores = {"USD": {"v": 0.0, "d": 0.0}, "EUR": {"v": 0.0, "d": 0.0}, "GBP": {"v": 0.0, "d": 0.0}, "SELIC": {"v": 0.0, "d": 0.0}, "IPCA": {"v": 0.0, "d": 0.0}, "IBOV": {"v": 0.0, "d": 0.0}, "SP500": {"v": 0.0, "d": 0.0}, "NASDAQ": {"v": 0.0, "d": 0.0}}
+    indicadores = {
+        "USD": {"v": 0.0, "d": 0.0}, "EUR": {"v": 0.0, "d": 0.0}, "GBP": {"v": 0.0, "d": 0.0}, 
+        "SELIC": {"v": 0.0, "d": 0.0}, "IPCA": {"v": 0.0, "d": 0.0}, 
+        "IBOV": {"v": 0.0, "d": 0.0}, "SP500": {"v": 0.0, "d": 0.0}, "NASDAQ": {"v": 0.0, "d": 0.0},
+        "NIKKEI": {"v": 0.0, "d": 0.0}, "HANGSENG": {"v": 0.0, "d": 0.0},
+        "STOXX600": {"v": 0.0, "d": 0.0}, "FTSE": {"v": 0.0, "d": 0.0},
+        "BRENT": {"v": 0.0, "d": 0.0}, "GOLD": {"v": 0.0, "d": 0.0}, "BITCOIN": {"v": 0.0, "d": 0.0},
+        "SOYBEAN": {"v": 0.0, "d": 0.0}, "CORN": {"v": 0.0, "d": 0.0}, "SUGAR": {"v": 0.0, "d": 0.0}, 
+        "COFFEE": {"v": 0.0, "d": 0.0}, "COPPER": {"v": 0.0, "d": 0.0}
+    }
     try:
         res = requests.get("https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL", timeout=3)
         if res.status_code == 200:
@@ -179,7 +189,13 @@ def buscar_indicadores_macro():
     except: pass
     
     if YFINANCE_INSTALADO:
-        for tick, chave in [("^BVSP", "IBOV"), ("^GSPC", "SP500"), ("^IXIC", "NASDAQ")]:
+        bolsas_comodities = {
+            "^BVSP": "IBOV", "^GSPC": "SP500", "^IXIC": "NASDAQ", 
+            "^N225": "NIKKEI", "^HSI": "HANGSENG", "^STOXX": "STOXX600", "^FTSE": "FTSE",
+            "BZ=F": "BRENT", "GC=F": "GOLD", "BTC-USD": "BITCOIN",
+            "ZS=F": "SOYBEAN", "ZC=F": "CORN", "SB=F": "SUGAR", "KC=F": "COFFEE", "HG=F": "COPPER"
+        }
+        for tick, chave in bolsas_comodities.items():
             try:
                 hist = yf.Ticker(tick).history(period="5d")
                 if len(hist) >= 2:
@@ -435,7 +451,7 @@ with st.sidebar:
 # ==========================================
 # HEADER PRINCIPAL 
 # ==========================================
-st.title("🐥 Tepetos' Finance 20.5 🐷💚")
+st.title("🐥 Tepetos' Finance 22.2 🐷💚")
 st.markdown(f"**Sistema ERP Institucional & Terminal Status Invest - Ativo: {conta_selecionada}**")
 
 st.sidebar.divider()
@@ -443,7 +459,7 @@ st.sidebar.markdown("### 🏢 Módulos do Sistema")
 modulo_selecionado = st.sidebar.radio("Navegue por área:", ["💳 Tesouraria & Despesas", "💼 Wealth Management"])
 
 # =========================================================================================
-# MÓDULO 1: TESOURARIA & DESPESAS (Dashboard Corrigido)
+# MÓDULO 1: TESOURARIA & DESPESAS
 # =========================================================================================
 if modulo_selecionado == "💳 Tesouraria & Despesas":
     
@@ -624,11 +640,9 @@ if modulo_selecionado == "💳 Tesouraria & Despesas":
                 with col_graf_barra:
                     if not realizado.empty: st.plotly_chart(px.bar(realizado.head(10).sort_values(by='valor_calc', ascending=True), x='valor_calc', y='Categoria', orientation='h', title="Os 10 Maiores Ladrões do Orçamento", color_discrete_sequence=['#006437']), use_container_width=True)
 
-                # 🔥 VERSÃO 20.4: BATALHA GERAL 360º CONSERTADA E BLINDADA 🔥
                 with closing(get_conn()) as conn:
                     try:
                         df_orc_db = pd.read_sql("SELECT * FROM orcamento WHERE conta=?", conn, params=(conta_selecionada,))
-                        # Se o banco de dados de orçamento estiver vazio para essa conta, carrega o padrão
                         if df_orc_db.empty:
                             df_orc_db = obter_orcamento_padrao()
                             
@@ -639,11 +653,9 @@ if modulo_selecionado == "💳 Tesouraria & Despesas":
                             st.subheader(f"🎯 A Batalha Geral: Orçado vs Realizado (360º)")
                             st.caption("Visão unificada das suas Receitas, Investimentos e Despesas.")
                             
-                            # Agrupa o Realizado
                             real_geral = df_filtrado.groupby("Categoria")['valor_calc'].sum().reset_index()
                             real_geral.rename(columns={'valor_calc': 'Realizado (R$)'}, inplace=True)
                             
-                            # Filtra as Metas Ativas
                             df_orc_db["Ativo?"] = df_orc_db["Ativo?"].apply(lambda x: True if str(x).lower() in ['1', 'true', 'sim', 'yes'] else False)
                             metas_ativas = df_orc_db[df_orc_db["Ativo?"] == True].copy()
                             
@@ -991,7 +1003,6 @@ elif modulo_selecionado == "💼 Wealth Management":
                     except Exception as e: st.error(f"Erro na leitura: {e}")
 
                 st.markdown("---")
-                # 🔥 CORREÇÃO V20.5: O COMANDO ST.TEXT_INPUT QUE DEU ERRO NA ABA CARTEIRA 🔥
                 nome_lote_kinvo = st.text_input("Nome Lote Kinvo (Para Extrato):", f"Kinvo Extrato - {datetime.date.today().strftime('%b/%y')}")
                 planilha_extrato = st.file_uploader("2. Extrato Mensal Kinvo", type=['xlsx', 'csv'], key="up_ex")
                 if planilha_extrato and st.button("Gerar Fluxo Automático"):
@@ -1445,8 +1456,12 @@ elif modulo_selecionado == "💼 Wealth Management":
 
                 def limpa_si(val):
                     if pd.isna(val) or str(val).strip() == '-' or str(val).strip() == '': return None
-                    v = str(val).replace('%', '').replace('.', '').replace(',', '.').strip()
-                    try: return float(v)
+                    v_str = str(val).replace('%', '').strip()
+                    if ',' in v_str and '.' in v_str:
+                        v_str = v_str.replace('.', '').replace(',', '.')
+                    elif ',' in v_str:
+                        v_str = v_str.replace(',', '.')
+                    try: return float(v_str)
                     except: return None
 
                 cols = [str(c).upper().strip() for c in df_bruto.columns]
@@ -1468,20 +1483,22 @@ elif modulo_selecionado == "💼 Wealth Management":
                     df_limpo = df_bruto.copy()
                     
                     df_limpo['P/L_calc'] = df_limpo[col_pl].apply(limpa_si)
-                    df_limpo['ROE_calc'] = df_limpo[col_roe].apply(limpa_si) if col_roe else 0.0
-                    df_limpo['ROIC_calc'] = df_limpo[col_roic].apply(limpa_si) if col_roic else 0.0
-                    df_limpo['Div_calc'] = df_limpo[col_div].apply(limpa_si) if col_div else 0.0
-                    df_limpo['CagrR_calc'] = df_limpo[col_cagr_r].apply(limpa_si) if col_cagr_r else 0.0
-                    df_limpo['CagrL_calc'] = df_limpo[col_cagr_l].apply(limpa_si) if col_cagr_l else 0.0
-                    df_limpo['ValMercado_calc'] = df_limpo[col_val_mercado].apply(limpa_si) if col_val_mercado else 0.0
+                    df_limpo['ROE_calc'] = df_limpo[col_roe].apply(limpa_si) if col_roe else None
+                    df_limpo['ROIC_calc'] = df_limpo[col_roic].apply(limpa_si) if col_roic else None
+                    df_limpo['Div_calc'] = df_limpo[col_div].apply(limpa_si) if col_div else None
+                    df_limpo['CagrR_calc'] = df_limpo[col_cagr_r].apply(limpa_si) if col_cagr_r else None
+                    df_limpo['CagrL_calc'] = df_limpo[col_cagr_l].apply(limpa_si) if col_cagr_l else None
+                    df_limpo['ValMercado_calc'] = df_limpo[col_val_mercado].apply(limpa_si) if col_val_mercado else None
+                    
+                    df_limpo = df_limpo.dropna(subset=['P/L_calc', 'ROE_calc', 'ROIC_calc', 'Div_calc', 'CagrR_calc', 'CagrL_calc', 'ValMercado_calc'])
                     
                     mask_pl = (df_limpo['P/L_calc'] >= filtro_pl[0]) & (df_limpo['P/L_calc'] <= filtro_pl[1])
                     mask_roe = (df_limpo['ROE_calc'] >= filtro_roe[0]) & (df_limpo['ROE_calc'] <= filtro_roe[1])
-                    mask_roic = ((df_limpo['ROIC_calc'] >= filtro_roic[0]) & (df_limpo['ROIC_calc'] <= filtro_roic[1])) | (df_limpo['ROIC_calc'].isna())
-                    mask_div = (df_limpo['Div_calc'] <= filtro_div_ebitda) | (df_limpo['Div_calc'].isna())
-                    mask_cagrr = (df_limpo['CagrR_calc'] >= filtro_cagr_rec) | (df_limpo['CagrR_calc'].isna())
-                    mask_cagrl = (df_limpo['CagrL_calc'] >= filtro_cagr_lucro) | (df_limpo['CagrL_calc'].isna())
-                    mask_mercado = ((df_limpo['ValMercado_calc'] / 1000000) >= filtro_valor_mercado) | (df_limpo['ValMercado_calc'].isna())
+                    mask_roic = (df_limpo['ROIC_calc'] >= filtro_roic[0]) & (df_limpo['ROIC_calc'] <= filtro_roic[1])
+                    mask_div = (df_limpo['Div_calc'] <= filtro_div_ebitda)
+                    mask_cagrr = (df_limpo['CagrR_calc'] >= filtro_cagr_rec)
+                    mask_cagrl = (df_limpo['CagrL_calc'] >= filtro_cagr_lucro)
+                    mask_mercado = ((df_limpo['ValMercado_calc'] / 1000000) >= filtro_valor_mercado)
 
                     df_filtrado = df_limpo[mask_pl & mask_roe & mask_roic & mask_div & mask_cagrr & mask_cagrl & mask_mercado].copy()
 
@@ -1512,7 +1529,7 @@ elif modulo_selecionado == "💼 Wealth Management":
                             if c is not None and c not in cols_view_final:
                                 cols_view_final.append(c)
 
-                        st.success(f"🎉 Encontramos {len(df_filtrado)} diamantes escondidos nesta planilha!")
+                        st.success(f"🎉 O Filtro Implacável encontrou exatamente {len(df_filtrado)} diamantes!")
                         st.dataframe(df_filtrado[cols_view_final], use_container_width=True, hide_index=True, column_config={"Tepetos Score": st.column_config.ProgressColumn("Tepetos Score", min_value=0, max_value=100)})
                         
                     else:
@@ -1528,9 +1545,6 @@ elif modulo_selecionado == "💼 Wealth Management":
 
         sub_br, sub_us, sub_fii = st.tabs(["🇧🇷 Ações Brasileiras", "🇺🇸 Stocks Americanas", "🏢 FIIs / REITs"])
 
-        # ==========================================
-        # SUB-ABA 1: AÇÕES BRASILEIRAS
-        # ==========================================
         with sub_br:
             st.subheader("🇧🇷 Ações Brasileiras na sua Carteira")
             
@@ -1613,7 +1627,6 @@ elif modulo_selecionado == "💼 Wealth Management":
                     
                     st.markdown("---")
                     st.markdown("### 👔 Consultoria Especializada (Economista Sênior)")
-                    st.caption("O economista fará um cruzamento dos seus fundamentos, rentabilidade e o cenário macroeconômico atual.")
                     
                     if st.button("🧠 Consultoria: Analisar Minha Carteira BR", type="primary", key="consultoria_br"):
                         if not api_key: st.error("Insira a API Key do Google no menu lateral.")
@@ -1651,19 +1664,63 @@ elif modulo_selecionado == "💼 Wealth Management":
                                 except Exception as e: st.error(f"Erro na consultoria: {e}")
 
                 st.markdown("---")
-                
                 st.markdown("### 🧠 Deep Dive Masterclass ALL-IN-ONE (Ações BR)")
-                st.caption("Gera Tabela de Fundamentos, Gráfico Trimestral DRE, Análise Qualitativa e Valuation DCF Matemático em 3 Cenários.")
                 t_deep_br_input = st.text_input("Digite o Ticker para o Raio-X Completo (ex: B3SA3):", key="deep_br").upper().strip()
                 
                 if st.button("🔎 Gerar Raio-X Integrado", key="btn_deep_br") and t_deep_br_input:
                     if not api_key: st.error("Insira a API Key do Google no Menu Lateral.")
                     else:
-                        with st.spinner("Extraindo Balanços, calculando o DCF por Ação e gerando Gráficos..."):
+                        with st.spinner("Extraindo Históricos da Bolsa, calculando DCF e desenhando Gráficos..."):
                             t_deep_br = f"{t_deep_br_input}.SA" if not t_deep_br_input.endswith(".SA") else t_deep_br_input
                             
                             try:
                                 tk = yf.Ticker(t_deep_br)
+                                
+                                hist_5y = tk.history(period="5y")
+                                if not hist_5y.empty:
+                                    st.markdown(f"#### 📈 Evolução da Cotação (Últimos 5 Anos): {t_deep_br_input}")
+                                    fig_price = px.line(hist_5y.reset_index(), x='Date', y='Close', labels={'Date': 'Data', 'Close': 'Cotação (R$)'}, color_discrete_sequence=['#006437'])
+                                    st.plotly_chart(fig_price, use_container_width=True)
+                                    
+                                divs = tk.dividends
+                                if not divs.empty:
+                                    divs_df = pd.DataFrame(divs).reset_index()
+                                    divs_df.columns = ['Date', 'Dividends']
+                                    divs_df['Year'] = divs_df['Date'].dt.year
+                                    divs_yearly = divs_df.groupby('Year')['Dividends'].sum().reset_index()
+                                    ano_atual = datetime.date.today().year
+                                    divs_yearly = divs_yearly[divs_yearly['Year'] >= (ano_atual - 5)]
+                                    if not divs_yearly.empty:
+                                        st.markdown(f"#### 💰 Histórico de Pagamento de Dividendos: {t_deep_br_input}")
+                                        fig_divs = px.bar(divs_yearly, x='Year', y='Dividends', labels={'Year': 'Ano', 'Dividends': 'Total Pago (R$)'}, color_discrete_sequence=['#FFD700'])
+                                        fig_divs.update_layout(xaxis=dict(tickmode='linear', dtick=1))
+                                        st.plotly_chart(fig_divs, use_container_width=True)
+                            except: pass
+
+                            txt_historico = "Dados trimestrais não encontrados."
+                            try:
+                                qf = tk.quarterly_financials
+                                if qf is not None and not qf.empty:
+                                    qf_t = qf.T 
+                                    plot_cols = []
+                                    if 'Total Revenue' in qf_t.columns: plot_cols.append('Total Revenue')
+                                    if 'Net Income' in qf_t.columns: plot_cols.append('Net Income')
+                                    
+                                    if plot_cols:
+                                        qf_plot = qf_t[plot_cols].head(4).sort_index(ascending=True) 
+                                        
+                                        st.markdown(f"#### 📊 Evolução Trimestral (DRE): {t_deep_br_input}")
+                                        fig_hist = px.bar(qf_plot.reset_index(), x='index', y=plot_cols, barmode='group', 
+                                                          title="Receita vs Lucro Líquido (Últimos 4 Trimestres)",
+                                                          labels={'index': 'Trimestre', 'value': 'Valor (R$)'},
+                                                          color_discrete_sequence=['#006437', '#FFD700'])
+                                        st.plotly_chart(fig_hist, use_container_width=True)
+                                        
+                                        txt_historico = qf_plot.to_csv(sep="|")
+                            except Exception:
+                                pass 
+                            
+                            try:
                                 info = tk.info
                                 p_hoje = s_float(info.get('currentPrice', info.get('previousClose', 0)))
                                 ind = buscar_indicadores_macro()
@@ -1697,67 +1754,53 @@ elif modulo_selecionado == "💼 Wealth Management":
                             if df_dcf is not None and not df_dcf.empty:
                                 texto_dcf_para_ia = df_dcf.to_csv(index=False, sep="|")
 
-                            txt_historico = "Dados trimestrais não encontrados."
-                            try:
-                                qf = tk.quarterly_financials
-                                if qf is not None and not qf.empty:
-                                    qf_t = qf.T 
-                                    plot_cols = []
-                                    if 'Total Revenue' in qf_t.columns: plot_cols.append('Total Revenue')
-                                    if 'Net Income' in qf_t.columns: plot_cols.append('Net Income')
-                                    
-                                    if plot_cols:
-                                        qf_plot = qf_t[plot_cols].head(4).sort_index(ascending=True) 
-                                        
-                                        st.markdown(f"#### 📊 Evolução Trimestral (DRE): {t_deep_br_input}")
-                                        fig_hist = px.bar(qf_plot.reset_index(), x='index', y=plot_cols, barmode='group', 
-                                                          title="Receita vs Lucro Líquido (Últimos 4 Trimestres)",
-                                                          labels={'index': 'Trimestre', 'value': 'Valor (R$)'},
-                                                          color_discrete_sequence=['#006437', '#FFD700'])
-                                        st.plotly_chart(fig_hist, use_container_width=True)
-                                        
-                                        txt_historico = qf_plot.to_csv(sep="|")
-                            except Exception:
-                                pass 
-                                
                             data_atual = datetime.date.today().strftime('%d/%m/%Y')
                             genai.configure(api_key=api_key)
                             
-                            with st.spinner("O Economista e o Robô Quantitativo estão finalizando a sua Masterclass..."):
+                            with st.spinner("O Economista Chefe está redigindo o Dossiê Final..."):
                                 try:
                                     modelo_ia = encontrar_modelo_flash()
                                     prompt_deepdive = f"""
-                                    Hoje é {data_atual}. Atue como Analista de Equity Sênior e Head de Valuation.
-                                    Faça o Deep Dive da ação {t_deep_br_input} (Preço: R$ {p_hoje:.2f}, Selic: {ind['SELIC']['v']}%.
+                                    Hoje é {data_atual}. Atue como Analista de Equity Sênior e Head de Valuation Institucional.
+                                    Faça o Deep Dive Supremo da ação {t_deep_br_input} (Preço: R$ {p_hoje:.2f}, Selic: {ind['SELIC']['v']}%.
 
                                     DADOS FORNECIDOS PELO SISTEMA QUANTITATIVO:
                                     1. Fundamentos: {fundamentos_texto}
                                     2. Histórico Trimestral DRE: {txt_historico}
                                     3. Resultados do Valuation Matemático: {texto_dcf_para_ia}
 
-                                    Escreva um relatório completo e elegante em Markdown com a seguinte estrutura EXATA:
+                                    Escreva um Relatório (Dossiê) completo e elegante em Markdown com a seguinte estrutura EXATA:
                                     
-                                    ### 1. Tabela de Indicadores Fundamentalistas
-                                    (Crie a tabela resumo de forma limpa e bonita com as informações acima)
+                                    ### 1. Visão Geral da Empresa e Mercado
+                                    (Explique o que a empresa faz, como ela ganha dinheiro, o mercado em que atua e a situação macro/microeconômica atual desse setor).
 
-                                    ### 2. Evolução Trimestral e Perspectivas
-                                    (Comente o histórico dos ultimos trimestres que eu te passei acima. Está evoluindo ou não? Aponte SINAIS DE ALERTA 🚨 e pontos positivos).
+                                    ### 2. Análise Competitiva e Concorrentes
+                                    (Quais são os principais concorrentes diretos e indiretos? Qual é o tamanho da sua vantagem competitiva - Fosso Econômico/Moat?)
 
-                                    ### 3. Análise Qualitativa
-                                    (Avalie: Governança Corporativa, Vantagens competitivas (Fosso), Perspectivas do setor, Consistência de Caixa).
+                                    ### 3. Matriz SWOT (Forças, Fraquezas, Oportunidades e Riscos)
+                                    (Aponte de forma clara e objetiva os pontos fortes, pontos fracos, oportunidades de crescimento e as ameaças/riscos que o investidor precisa monitorar).
 
-                                    ### 4. Valuation e Preço Justo
-                                    (Apresente a tabela de Valuation com os dados exatos calculados pelo Python: Cenário | Retorno Exigido | Cresc. Perpétuo (g) | Preço Justo | Upside / Margem). 
+                                    ### 4. Governança Corporativa e Gestão
+                                    (Avalie a diretoria, o alinhamento de interesses com o acionista minoritário, estrutura de capital e nível de governança corporativa).
+
+                                    ### 5. Tabela de Fundamentos Básicos
+                                    (Crie a tabela resumo de forma limpa e bonita com as métricas informadas acima).
+
+                                    ### 6. Evolução Histórica (Receita, Lucro e Dividendos)
+                                    (Comente a evolução dos lucros trimestrais que te passei e as perspectivas. Avalie a consistência na distribuição de dividendos. Aponte SINAIS DE ALERTA 🚨).
+
+                                    ### 7. Valuation e Preço Justo
+                                    (Apresente a tabela de Valuation com os dados exatos calculados pelo Python acima: Cenário | Retorno Exigido | Cresc. Perpétuo (g) | Preço Justo | Upside / Margem). 
                                     (Se for Banco, use DDM e ignore os números do Python se estiverem distorcidos).
                                     Comente a Margem de Segurança do cenário base.
 
-                                    ### 5. Metodologia Aplicada
-                                    (Explique resumidamente os cálculos utilizados: Valuation 'Earnings Power Value' por ação para blindar distorções da API).
+                                    ### 8. Parecer Final do Analista
+                                    (Sua conclusão de ouro: onde esta empresa estará em 5 anos? Vale o risco frente ao cenário macro?).
 
                                     Assine EXATAMENTE: 'Com carinho, Tepeto'
                                     """
                                     res = genai.GenerativeModel(modelo_ia).generate_content(prompt_deepdive)
-                                    st.success("Masterclass Deep Dive Gerada!")
+                                    st.success("Dossiê Deep Dive Gerado com Sucesso!")
                                     st.markdown(f"<div style='background-color: white; padding: 30px; border-left: 5px solid #006437; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>{res.text.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
                                 except Exception as e: st.error(f"Erro no Deep Dive: {e}")
 
@@ -1877,16 +1920,37 @@ elif modulo_selecionado == "💼 Wealth Management":
                 st.markdown("---")
                 
                 st.markdown("### 🧠 Deep Dive Masterclass ALL-IN-ONE (Stocks EUA)")
-                st.caption("Gera Tabela de Fundamentos, Gráfico SEC, Análise Qualitativa, Alertas e Valuation (DCF Matemático).")
+                st.caption("Gera Gráficos Históricos, DRE, Tabela de Fundamentos, Análise Qualitativa SWOT e Valuation Matemático.")
                 t_deep_us_input = st.text_input("Digite o Ticker para o Raio-X Completo (ex: AAPL, EQX):", key="deep_us_input").upper().strip()
                 
                 if st.button("🔎 Gerar Raio-X Integrado", key="btn_deep_us") and t_deep_us_input:
                     if not api_key: st.error("Insira a API Key do Google.")
                     else:
-                        with st.spinner("Extraindo balanços globais, calculando Valuation e gerando Gráficos..."):
+                        with st.spinner("Extraindo balanços globais, desenhando Gráficos e projetando Valuation..."):
                             
                             try:
                                 tk = yf.Ticker(t_deep_us_input)
+                                
+                                hist_5y = tk.history(period="5y")
+                                if not hist_5y.empty:
+                                    st.markdown(f"#### 📈 Evolução da Cotação (Últimos 5 Anos): {t_deep_us_input}")
+                                    fig_price = px.line(hist_5y.reset_index(), x='Date', y='Close', labels={'Date': 'Data', 'Close': 'Cotação (USD $)'}, color_discrete_sequence=['#006437'])
+                                    st.plotly_chart(fig_price, use_container_width=True)
+                                    
+                                divs = tk.dividends
+                                if not divs.empty:
+                                    divs_df = pd.DataFrame(divs).reset_index()
+                                    divs_df.columns = ['Date', 'Dividends']
+                                    divs_df['Year'] = divs_df['Date'].dt.year
+                                    divs_yearly = divs_df.groupby('Year')['Dividends'].sum().reset_index()
+                                    ano_atual = datetime.date.today().year
+                                    divs_yearly = divs_yearly[divs_yearly['Year'] >= (ano_atual - 5)]
+                                    if not divs_yearly.empty:
+                                        st.markdown(f"#### 💰 Histórico de Pagamento de Dividendos: {t_deep_us_input}")
+                                        fig_divs = px.bar(divs_yearly, x='Year', y='Dividends', labels={'Year': 'Ano', 'Dividends': 'Total Pago (USD $)'}, color_discrete_sequence=['#FFD700'])
+                                        fig_divs.update_layout(xaxis=dict(tickmode='linear', dtick=1))
+                                        st.plotly_chart(fig_divs, use_container_width=True)
+                                
                                 info = tk.info
                                 p_hoje = s_float(info.get('currentPrice', info.get('previousClose', 0)))
                                 ind = buscar_indicadores_macro()
@@ -1913,11 +1977,6 @@ elif modulo_selecionado == "💼 Wealth Management":
                                 p_hoje = 0.0
                                 fundamentos_texto = "Dados fundamentalistas indisponíveis."
 
-                            texto_dcf_para_ia = ""
-                            df_dcf, _, _ = calcular_valuation_dcf_matematico(t_deep_us_input, is_fii=False)
-                            if df_dcf is not None and not df_dcf.empty:
-                                texto_dcf_para_ia = df_dcf.to_csv(index=False, sep="|")
-
                             txt_historico = "Dados trimestrais não encontrados."
                             try:
                                 qf = tk.quarterly_financials
@@ -1938,16 +1997,21 @@ elif modulo_selecionado == "💼 Wealth Management":
                                         st.plotly_chart(fig_hist, use_container_width=True)
                                         txt_historico = qf_plot.to_csv(sep="|")
                             except Exception: pass
+
+                            texto_dcf_para_ia = ""
+                            df_dcf, _, _ = calcular_valuation_dcf_matematico(t_deep_us_input, is_fii=False)
+                            if df_dcf is not None and not df_dcf.empty:
+                                texto_dcf_para_ia = df_dcf.to_csv(index=False, sep="|")
                                 
                             data_atual = datetime.date.today().strftime('%d/%m/%Y')
                             genai.configure(api_key=api_key)
                             
-                            with st.spinner("Analisando mercado Global, Moat e desenhando o Valuation final..."):
+                            with st.spinner("O Analista Global está desenhando o Dossiê Final..."):
                                 try:
                                     modelo_ia = encontrar_modelo_flash()
                                     prompt_deepdive = f"""
-                                    Hoje é {data_atual}. Atue como Analista de Equity Internacional.
-                                    Faça o Deep Dive da Stock americana {t_deep_us_input} (Preço: $ {p_hoje:.2f}).
+                                    Hoje é {data_atual}. Atue como Analista de Equity Global e Head de Valuation Institucional.
+                                    Faça o Deep Dive Supremo da Stock americana {t_deep_us_input} (Preço: $ {p_hoje:.2f}).
 
                                     DADOS QUANTITATIVOS COLETADOS:
                                     1. Fundamentos: {fundamentos_texto}
@@ -1956,26 +2020,35 @@ elif modulo_selecionado == "💼 Wealth Management":
 
                                     Escreva o relatório OBRIGATORIAMENTE em Markdown com a estrutura exata:
                                     
-                                    ### 1. Tabela de Indicadores Fundamentalistas
-                                    (Crie a tabela resumo de forma limpa)
+                                    ### 1. Visão Geral da Empresa e Mercado Global
+                                    (Explique o que a empresa faz, como ganha dinheiro, tamanho do mercado de atuação).
 
-                                    ### 2. Evolução Trimestral e Perspectivas
-                                    (Comente o histórico que passei. Aponte SINAIS DE ALERTA 🚨 e pontos positivos na DRE).
+                                    ### 2. Análise Competitiva e Concorrentes
+                                    (Quais os principais players do setor e qual o Fosso Econômico/Moat desta Stock?)
 
-                                    ### 3. Análise Qualitativa
-                                    (Avalie: Governança, Vantagens Competitivas Globais (Fosso Econômico) e Geração de Caixa).
+                                    ### 3. Matriz SWOT Global
+                                    (Aponte de forma direta: Forças, Fraquezas, Oportunidades Tecnológicas/Mercadológicas e Ameaças/Riscos macro).
 
-                                    ### 4. Valuation e Preço Justo
-                                    (Use a tabela fornecida pelo DCF Matemático acima com as colunas: Cenário | WACC (%) | Cresc. Perpétuo (g) | Preço Justo | Upside / Margem). 
+                                    ### 4. Governança e Estrutura
+                                    (Avalie a qualidade da gestão e proteção ao acionista).
+
+                                    ### 5. Tabela de Fundamentos Básicos
+                                    (Crie a tabela resumo de forma limpa com P/L, ROE, DY, etc).
+
+                                    ### 6. Evolução Histórica (Receita, Lucro e Dividendos)
+                                    (Comente o histórico DRE que te passei e o histórico de dividendos que o cliente vê nos gráficos. Aponte SINAIS DE ALERTA 🚨).
+
+                                    ### 7. Valuation e Preço Justo
+                                    (Use a tabela fornecida pelo DCF Matemático acima com as colunas: Cenário | Retorno Exigido | Cresc. Perpétuo (g) | Preço Justo | Upside / Margem). 
                                     Comente a Margem de Segurança do cenário base.
 
-                                    ### 5. Metodologia Aplicada
-                                    (Explique de forma técnica como o sistema chegou no valor justo com o modelo Earnings Power Value para contornar falhas de API).
+                                    ### 8. Parecer Final do Analista
+                                    (A conclusão de ouro: vale a pena ser sócio para os próximos 5 anos?).
 
                                     Assine EXATAMENTE: 'Com carinho, Tepeto'
                                     """
                                     res = genai.GenerativeModel(modelo_ia).generate_content(prompt_deepdive)
-                                    st.success("Masterclass Deep Dive Gerada!")
+                                    st.success("Dossiê Deep Dive Gerado com Sucesso!")
                                     st.markdown(f"<div style='background-color: white; padding: 30px; border-left: 5px solid #006437; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>{res.text.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
                                 except Exception as e: st.error(f"Erro no Deep Dive: {e}")
 
@@ -2094,16 +2167,37 @@ elif modulo_selecionado == "💼 Wealth Management":
                 st.markdown("---")
                 
                 st.markdown("### 🧠 Deep Dive Masterclass ALL-IN-ONE (FIIs)")
-                st.caption("Gera Tabela Básica, Qualitativa de Vacância/Imóveis, Sinais de Alerta e Valuation pelo Modelo de Gordon.")
+                st.caption("Gera Gráficos Históricos, Tabela Básica, Qualitativa de Vacância/Imóveis, Sinais de Alerta e Valuation pelo Modelo de Gordon.")
                 t_deep_fii_input = st.text_input("Digite o Ticker para o Raio-X do Imóvel/Papel (ex: HGLG11):", key="deep_fii_input").upper().strip()
                 
                 if st.button("🔎 Gerar Raio-X Integrado", key="btn_deep_fii") and t_deep_fii_input:
                     if not api_key: st.error("Insira a API Key.")
                     else:
-                        with st.spinner("Analisando relatórios gerenciais e precificando via Modelo de Gordon Matemático..."):
+                        with st.spinner("Analisando cotações, dividendos e precificando via Modelo de Gordon Matemático..."):
                             t_deep_fii = f"{t_deep_fii_input}.SA" if not t_deep_fii_input.endswith(".SA") else t_deep_fii_input
                             try:
                                 tk = yf.Ticker(t_deep_fii)
+                                
+                                hist_5y = tk.history(period="5y")
+                                if not hist_5y.empty:
+                                    st.markdown(f"#### 📈 Evolução da Cotação (Últimos 5 Anos): {t_deep_fii_input}")
+                                    fig_price = px.line(hist_5y.reset_index(), x='Date', y='Close', labels={'Date': 'Data', 'Close': 'Cotação (R$)'}, color_discrete_sequence=['#006437'])
+                                    st.plotly_chart(fig_price, use_container_width=True)
+                                    
+                                divs = tk.dividends
+                                if not divs.empty:
+                                    divs_df = pd.DataFrame(divs).reset_index()
+                                    divs_df.columns = ['Date', 'Dividends']
+                                    divs_df['Year'] = divs_df['Date'].dt.year
+                                    divs_yearly = divs_df.groupby('Year')['Dividends'].sum().reset_index()
+                                    ano_atual = datetime.date.today().year
+                                    divs_yearly = divs_yearly[divs_yearly['Year'] >= (ano_atual - 5)]
+                                    if not divs_yearly.empty:
+                                        st.markdown(f"#### 💰 Histórico de Pagamento de Rendimentos Anuais: {t_deep_fii_input}")
+                                        fig_divs = px.bar(divs_yearly, x='Year', y='Dividends', labels={'Year': 'Ano', 'Dividends': 'Total Pago (R$)'}, color_discrete_sequence=['#FFD700'])
+                                        fig_divs.update_layout(xaxis=dict(tickmode='linear', dtick=1))
+                                        st.plotly_chart(fig_divs, use_container_width=True)
+                                
                                 info = tk.info
                                 p_hoje = s_float(info.get('currentPrice', info.get('previousClose', 0)))
                                 pvp = info.get('priceToBook', 0)
@@ -2136,33 +2230,46 @@ elif modulo_selecionado == "💼 Wealth Management":
                                 modelo_ia = encontrar_modelo_flash()
                                 prompt_deepdive = f"""
                                 Hoje é {data_atual}. Atue como Analista de Fundos Imobiliários e Head de Valuation.
-                                Faça um Deep Dive Magistral sobre o FII {t_deep_fii_input} (Cotação atual: R$ {p_hoje:.2f}). Selic atual: {ind['SELIC']['v']}%.
+                                Faça o Dossiê Supremo do FII {t_deep_fii_input} (Cotação atual: R$ {p_hoje:.2f}, Selic atual: {ind['SELIC']['v']}%).
                                 
                                 **DADOS COLETADOS (NÃO ALTERE ESTES NÚMEROS):**
                                 Fundamentos: {fundamentos_texto}
                                 Gordon Model Calculado pelo Sistema: {texto_dcf_para_ia}
                                 
-                                **ESTRUTURA OBRIGATÓRIA DO RELATÓRIO:**
+                                **ESTRUTURA OBRIGATÓRIA DO RELATÓRIO EM MARKDOWN:**
                                 
-                                ### 1. Tabela de Fundamentos Básicos
-                                (Crie a tabela resumo)
+                                ### 1. Visão Geral do Fundo e Segmento
+                                (Explique a tese do fundo, se é papel/tijolo, híbrido, galpões, shoppings e como a Selic atual impacta esse segmento).
                                 
-                                ### 2. Análise Qualitativa e Sinais de Alerta
-                                (Analise: Histórico de Dividendos, Vacância, Qualidade dos Imóveis/Papéis, Inquilinos. Aponte **SINAIS DE ALERTA** 🚨).
+                                ### 2. Análise Competitiva do Portfólio
+                                (Qualidade dos imóveis, localização ou perfil de risco da carteira de CRIs).
                                 
-                                ### 3. Valuation (Modelo de Gordon)
+                                ### 3. Matriz SWOT e Alertas de Risco 🚨
+                                (Forças, Fraquezas, Oportunidades. Aponte SINAIS DE ALERTA sobre Vacância Física/Financeira, concentração de inquilinos ou calotes).
+
+                                ### 4. Gestão e Governança
+                                (Avalie a qualidade do Administrador e do Gestor, taxa de gestão/performance).
+
+                                ### 5. Tabela de Fundamentos Básicos
+                                (Crie a tabela resumo de P/VP e DY com os dados coletados).
+                                
+                                ### 6. Evolução Histórica de Rendimentos
+                                (Comente o histórico de dividendos que o usuário vê no gráfico acima. É consistente?).
+
+                                ### 7. Valuation e Preço Justo (Modelo de Gordon)
                                 (Crie a Tabela EXATA com os dados do Gordon Model acima). Colunas: `| Cenário | Retorno Exigido (%) | Cresc. Dividendo (g) | Preço Justo | Upside / Margem |`.
                                 
-                                ### 4. Metodologia Aplicada
-                                (Explique o cálculo do Modelo de Gordon e o prêmio de risco usado sobre a Selic).
+                                ### 8. Parecer Final e Perspectivas
+                                (A conclusão de ouro: este fundo compensa o prêmio de risco frente à Renda Fixa hoje?).
                                 
-                                Assine: 'Com carinho, Tepeto'
+                                Assine EXATAMENTE: 'Com carinho, Tepeto'
                                 """
                                 res = genai.GenerativeModel(modelo_ia).generate_content(prompt_deepdive)
-                                st.success("Análise de Deep Dive FII concluída!")
+                                st.success("Dossiê Deep Dive FII concluído!")
                                 st.markdown(f"<div style='background-color: white; padding: 30px; border-left: 5px solid #006437; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>{res.text.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
                             except Exception as e: st.error(f"Erro no Deep Dive: {e}")
 
+    # 🔥 VERSÃO 22.2: MORNING CALL COM CORES CORRETAS E BANCADA DO AGRO 🔥
     with tab_macro:
         st.header("🌍 Cenário Macro & Boletins Inteligentes")
         st.markdown("### Radar Econômico Global (Tempo Real)")
@@ -2184,7 +2291,97 @@ elif modulo_selecionado == "💼 Wealth Management":
         
         st.markdown("---")
         
-        def get_portfolio_performance(conta, periodo="1mo"):
+        def calcular_rentabilidade_diaria_carteira(conta):
+            with closing(get_conn()) as conn:
+                df_cart = pd.read_sql("SELECT ticker, classe_ativo, saldo_bruto FROM carteira WHERE conta=?", conn, params=(conta,))
+            
+            if df_cart.empty: return None
+            
+            dados_ativos = []
+            for _, row in df_cart.iterrows():
+                t_orig = str(row['ticker']).strip().upper()
+                c_ativo = str(row['classe_ativo']).title().strip()
+                saldo = float(row['saldo_bruto'])
+                if saldo <= 0: continue
+                
+                t_yf = t_orig
+                if c_ativo in ["Ação", "Acao", "Fundo Imobiliário", "Fundo Imobiliario", "Bdr"] and t_orig[-1].isdigit() and not t_orig.endswith(".SA"):
+                    t_yf = f"{t_orig}.SA"
+                elif c_ativo == "Cripto" and not t_orig.endswith("-USD"):
+                    t_yf = f"{t_orig}-USD"
+                    
+                try:
+                    hist = yf.Ticker(t_yf).history(period="5d")
+                    if not hist.empty and len(hist) >= 2:
+                        p_hoje = hist['Close'].iloc[-1]
+                        p_ontem = hist['Close'].iloc[-2]
+                        var_pct = ((p_hoje / p_ontem) - 1) * 100
+                        
+                        dados_ativos.append({
+                            'Ticker': t_orig,
+                            'Classe': c_ativo,
+                            'Variação (%)': var_pct,
+                            'Saldo': saldo
+                        })
+                except: pass
+            
+            if not dados_ativos: return None
+            
+            df_dados = pd.DataFrame(dados_ativos)
+            
+            total_saldo = df_dados['Saldo'].sum()
+            df_dados['Peso'] = df_dados['Saldo'] / total_saldo
+            rent_global = (df_dados['Variação (%)'] * df_dados['Peso']).sum()
+            
+            df_br = df_dados[df_dados['Ticker'].str.endswith('.SA') & (df_dados['Classe'] == 'Ação')]
+            rent_br = (df_br['Variação (%)'] * (df_br['Saldo'] / df_br['Saldo'].sum())).sum() if not df_br.empty else 0.0
+            
+            df_us = df_dados[~df_dados['Ticker'].str.endswith('.SA') & df_dados['Classe'].isin(['Ação', 'Bdr', 'Outros'])]
+            rent_us = (df_us['Variação (%)'] * (df_us['Saldo'] / df_us['Saldo'].sum())).sum() if not df_us.empty else 0.0
+            
+            df_fii = df_dados[df_dados['Classe'].str.contains('Fundo Imob')]
+            rent_fii = (df_fii['Variação (%)'] * (df_fii['Saldo'] / df_fii['Saldo'].sum())).sum() if not df_fii.empty else 0.0
+            
+            df_cripto = df_dados[df_dados['Classe'].str.contains('Cripto')]
+            rent_cripto = (df_cripto['Variação (%)'] * (df_cripto['Saldo'] / df_cripto['Saldo'].sum())).sum() if not df_cripto.empty else 0.0
+            
+            return {
+                "Global": rent_global,
+                "Ações BR": rent_br if not df_br.empty else None,
+                "Stocks EUA": rent_us if not df_us.empty else None,
+                "FIIs": rent_fii if not df_fii.empty else None,
+                "Cripto": rent_cripto if not df_cripto.empty else None,
+                "df": df_dados
+            }
+
+        st.markdown("### 📊 Termômetro Diário da Sua Carteira (Fechamento Anterior)")
+        with st.spinner("Calculando o fechamento do dia da sua carteira..."):
+            rent_diaria = calcular_rentabilidade_diaria_carteira(conta_selecionada)
+            
+        if rent_diaria:
+            cr1, cr2, cr3, cr4, cr5 = st.columns(5)
+            
+            def formata_rent(val):
+                if val is None: return "N/A", "off"
+                return f"{val:+.2f}%", "normal"
+                
+            v_glob, c_glob = formata_rent(rent_diaria["Global"])
+            v_br, c_br = formata_rent(rent_diaria["Ações BR"])
+            v_us, c_us = formata_rent(rent_diaria["Stocks EUA"])
+            v_fii, c_fii = formata_rent(rent_diaria["FIIs"])
+            v_cripto, c_cripto = formata_rent(rent_diaria["Cripto"])
+            
+            cr1.metric("Carteira Global", v_glob, v_glob, delta_color=c_glob)
+            cr2.metric("Ações BR", v_br, v_br, delta_color=c_br)
+            cr3.metric("Stocks EUA", v_us, v_us, delta_color=c_us)
+            cr4.metric("FIIs", v_fii, v_fii, delta_color=c_fii)
+            cr5.metric("Cripto", v_cripto, v_cripto, delta_color=c_cripto)
+        else:
+            st.info("Sua carteira está vazia ou os mercados não tiveram oscilação registrada no último pregão.")
+            
+        st.markdown("---")
+
+        def get_portfolio_performance_string(conta, periodo="5d"):
             resumo = ""
             with closing(get_conn()) as conn:
                 df_cart = pd.read_sql("SELECT ticker, classe_ativo FROM carteira WHERE conta=?", conn, params=(conta,))
@@ -2200,12 +2397,14 @@ elif modulo_selecionado == "💼 Wealth Management":
                 t_yf = t_orig
                 if c_ativo in ["Ação", "Acao", "Fundo Imobiliário", "Fundo Imobiliario", "Bdr"] and t_orig[-1].isdigit() and not t_orig.endswith(".SA"):
                     t_yf = f"{t_orig}.SA"
+                elif c_ativo == "Cripto" and not t_orig.endswith("-USD"):
+                    t_yf = f"{t_orig}-USD"
                     
                 try:
                     hist = yf.Ticker(t_yf).history(period=periodo)
                     if not hist.empty and len(hist) >= 2:
                         preco_atual = hist['Close'].iloc[-1]
-                        var_pct = ((preco_atual / hist['Close'].iloc[0]) - 1) * 100
+                        var_pct = ((preco_atual / hist['Close'].iloc[-2]) - 1) * 100
                         
                         if c_ativo not in classes_dados:
                             classes_dados[c_ativo] = []
@@ -2219,12 +2418,12 @@ elif modulo_selecionado == "💼 Wealth Management":
                     pass
                     
             if not classes_dados:
-                return "Não foi possível extrair a variação recente via Yahoo Finance. (Pode ser erro de ticker ou a carteira possui apenas ativos ocultos)."
+                return "Não foi possível extrair a variação recente via Yahoo Finance."
                 
             for classe, ativos in classes_dados.items():
                 resumo += f"\n[{classe}]\n"
                 for a in ativos:
-                    resumo += f"- {a['ticker']}: Preço R$ {a['preco']:.2f} | Variação: {a['var']:.2f}%\n"
+                    resumo += f"- {a['ticker']}: Preço R$ {a['preco']:.2f} | Variação Diária: {a['var']:+.2f}%\n"
                     
             return resumo
 
@@ -2232,18 +2431,99 @@ elif modulo_selecionado == "💼 Wealth Management":
         mes_atual = meses_pt[datetime.date.today().month - 1]
         ano_atual = datetime.date.today().year
 
-        col_b1, col_b2 = st.columns(2)
+        col_b0, col_b1, col_b2 = st.columns(3)
+        with col_b0:
+            btn_diario = st.button("☀️ Morning Call Diário", type="primary", use_container_width=True)
         with col_b1:
             btn_semanal = st.button("📊 Gerar Boletim Semanal", use_container_width=True)
         with col_b2:
-            btn_mensal = st.button("📈 Gerar Resumo Mensal", type="primary", use_container_width=True)
+            btn_mensal = st.button("📈 Gerar Resumo Mensal", use_container_width=True)
             
+        if btn_diario:
+            if not api_key: st.error("Insira a chave API da Google no menu lateral.")
+            else:
+                with st.spinner("Compilando as notícias globais e montando o seu Morning Call exclusivo..."):
+                    try:
+                        dados_performance = get_portfolio_performance_string(conta_selecionada, "5d")
+                        
+                        panorama_mundial = f"""
+                        - Dólar: R$ {indicadores['USD']['v']:.2f} ({indicadores['USD']['d']:+.2f}%)
+                        - Selic: {indicadores['SELIC']['v']}%
+                        - IBOVESPA (BR): {indicadores.get('IBOV', {}).get('v', 0):,.0f} pts ({indicadores.get('IBOV', {}).get('d', 0):+.2f}%)
+                        - S&P 500 (EUA): {indicadores.get('SP500', {}).get('v', 0):,.0f} pts ({indicadores.get('SP500', {}).get('d', 0):+.2f}%)
+                        - NASDAQ (EUA): {indicadores.get('NASDAQ', {}).get('v', 0):,.0f} pts ({indicadores.get('NASDAQ', {}).get('d', 0):+.2f}%)
+                        - NIKKEI (Japão): {indicadores.get('NIKKEI', {}).get('v', 0):,.0f} pts ({indicadores.get('NIKKEI', {}).get('d', 0):+.2f}%)
+                        - HANG SENG (China): {indicadores.get('HANGSENG', {}).get('v', 0):,.0f} pts ({indicadores.get('HANGSENG', {}).get('d', 0):+.2f}%)
+                        - STOXX 600 (Europa): {indicadores.get('STOXX600', {}).get('v', 0):,.0f} pts ({indicadores.get('STOXX600', {}).get('d', 0):+.2f}%)
+                        - Petróleo Brent: $ {indicadores.get('BRENT', {}).get('v', 0):.2f} ({indicadores.get('BRENT', {}).get('d', 0):+.2f}%)
+                        - Ouro: $ {indicadores.get('GOLD', {}).get('v', 0):.2f} ({indicadores.get('GOLD', {}).get('d', 0):+.2f}%)
+                        - Cobre: $ {indicadores.get('COPPER', {}).get('v', 0):.2f} ({indicadores.get('COPPER', {}).get('d', 0):+.2f}%)
+                        - Soja: $ {indicadores.get('SOYBEAN', {}).get('v', 0):.2f} ({indicadores.get('SOYBEAN', {}).get('d', 0):+.2f}%)
+                        - Milho: $ {indicadores.get('CORN', {}).get('v', 0):.2f} ({indicadores.get('CORN', {}).get('d', 0):+.2f}%)
+                        - Açúcar: $ {indicadores.get('SUGAR', {}).get('v', 0):.2f} ({indicadores.get('SUGAR', {}).get('d', 0):+.2f}%)
+                        - Café: $ {indicadores.get('COFFEE', {}).get('v', 0):.2f} ({indicadores.get('COFFEE', {}).get('d', 0):+.2f}%)
+                        - Bitcoin: $ {indicadores.get('BITCOIN', {}).get('v', 0):,.0f} ({indicadores.get('BITCOIN', {}).get('d', 0):+.2f}%)
+                        """
+                        
+                        genai.configure(api_key=api_key)
+                        modelo_boletim = encontrar_modelo_flash()
+                        
+                        prompt_diario = f"""Inicie EXATAMENTE com:
+                        "Olá, Tepeto!
+                        
+                        **☀️ MORNING CALL TEPETOS FINANCE**
+                        **Data:** {datetime.date.today().strftime('%d/%m/%Y')}"
+
+                        Você é o Economista-Chefe do Family Office Tepetos. Escreva o resumo matinal dos mercados no estilo institucional 'Morning Call'.
+                        Considere OBRIGATORIAMENTE os dados matemáticos abaixo para escrever o seu texto:
+                        
+                        {panorama_mundial}
+
+                        Crie um relatório em Markdown elegante, direto e com a estrutura EXATA abaixo:
+
+                        ### ⚡ Fast Track (Resumo de 1 Minuto)
+                        (Crie 3 a 4 bullet points curtos com as manchetes e direcionamentos mais importantes do dia para o investidor ler rápido).
+
+                        ### 🌍 Fechamento e Abertura dos Mercados
+                        (Use os DADOS EXATOS que eu te passei acima para falar sobre as Bolsas dos EUA e do Brasil (Ibovespa), citando se subiram ou caíram e a porcentagem. Faça o mesmo para a Ásia e a Europa nesta manhã).
+
+                        ### 🛢️ Commodities, Agro e Cripto
+                        (Use os DADOS EXATOS passados acima para comentar as commodities (Petróleo, Ouro, Cobre e os produtos do Agronegócio como Soja, Milho, Açúcar e Café). Não precisa citar todos obrigatoriamente se não houver variação relevante, foque nos destaques que impactam a inflação e a bolsa brasileira. Cite sempre o preço de fechamento e a variação %. Comente também rapidamente sobre a variação do Bitcoin).
+
+                        ### 📅 Agenda do Dia
+                        (Aponte os principais indicadores econômicos, decisões de juros ou balanços importantes esperados para hoje no Brasil e no mundo).
+
+                        ### 🏛️ Cenário Macro e Político
+                        (Análise detalhada da economia e política global e brasileira. Como isso afeta os juros, o dólar e a inflação hoje?).
+
+                        ### 🎯 Radar da sua Carteira
+                        Abaixo estão os ativos presentes na carteira do cliente hoje e suas últimas variações:
+                        [DADOS DA CARTEIRA]
+                        {dados_performance}
+                        [FIM DOS DADOS]
+                        (Selecione alguns ativos ou setores específicos dessa lista que podem sofrer impactos diretos hoje devido às notícias ou cenário macroeconômico atual. Destaque perspectivas e comentários relevantes sobre eles. Não precisa citar todos, apenas os destaques).
+
+                        IMPORTANTE - ASSINATURA E IDENTIDADE:
+                        No final do texto, conclua EXATAMENTE com o seguinte texto:
+
+                        "Na Tepetos Finance, nosso nome vem do ucraniano "tieptio", que significa "pintinho". Assim como um ninho, cuidamos do nosso patrimônio, dos nossos investimentos e do nosso futuro com muito amor, carinho e instinto de proteção, buscando sempre o melhor para o nosso crescimento e segurança.
+
+                        Excelente dia de negócios!
+                        Com carinho,
+                        Tepetos"
+                        """
+                        
+                        response_bol = genai.GenerativeModel(modelo_boletim).generate_content(prompt_diario)
+                        st.success("Morning Call gerado com sucesso!")
+                        st.markdown(f"<div style='background-color: white; padding: 30px; border-left: 5px solid #FFD700; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>{response_bol.text.replace(chr(10), '<br>')}</div>", unsafe_allow_html=True)
+                    except Exception as e: st.error(f"Erro ao gerar o Morning Call: {e}")
+
         if btn_semanal:
             if not api_key: st.error("Insira a chave API da Google no menu lateral.")
             else:
                 with st.spinner("Extraindo a variação da última SEMANA da sua carteira e gerando relatório..."):
                     try:
-                        dados_performance = get_portfolio_performance(conta_selecionada, "5d")
+                        dados_performance = get_portfolio_performance_string(conta_selecionada, "5d")
                         genai.configure(api_key=api_key)
                         modelo_boletim = encontrar_modelo_flash()
                         
@@ -2272,7 +2552,7 @@ elif modulo_selecionado == "💼 Wealth Management":
                         IMPORTANTE - ASSINATURA E IDENTIDADE:
                         No final do texto, conclua EXATAMENTE com o seguinte texto:
 
-                        "Na Tepetos Finance, nosso nome vem do ucraniano "tieptio", que significa "pintinho". Assim como um ninho, cuidamos do nosso patrimônio, dos nossos investments e do nosso futuro com muito amor, carinho e instinto de proteção, buscando sempre o melhor para o nosso crescimento e segurança.
+                        "Na Tepetos Finance, nosso nome vem do ucraniano "tieptio", que significa "pintinho". Assim como um ninho, cuidamos do nosso patrimônio, dos nossos investimentos e do nosso futuro com muito amor, carinho e instinto de proteção, buscando sempre o melhor para o nosso crescimento e segurança.
 
                         Com carinho,
                         Tepetos"
@@ -2288,7 +2568,7 @@ elif modulo_selecionado == "💼 Wealth Management":
             else:
                 with st.spinner("Extraindo a variação do último MÊS da sua carteira e gerando o dossiê completo..."):
                     try:
-                        dados_performance = get_portfolio_performance(conta_selecionada, "1mo")
+                        dados_performance = get_portfolio_performance_string(conta_selecionada, "1mo")
                         genai.configure(api_key=api_key)
                         modelo_boletim = encontrar_modelo_flash()
                         
